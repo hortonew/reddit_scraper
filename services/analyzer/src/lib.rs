@@ -1,7 +1,9 @@
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use rusqlite::{Connection, Result};
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Post {
     title: String,
     selftext: String,
@@ -9,7 +11,7 @@ pub struct Post {
     url: String,
 }
 
-pub fn get_analysis() -> Result<Vec<Post>> {
+pub fn get_analysis() -> Result<Option<Post>> {
     let conn = Connection::open("services/reddit_scraper.db")?;
 
     let mut stmt = conn.prepare("SELECT title, selftext, created_utc, url FROM posts")?;
@@ -27,5 +29,7 @@ pub fn get_analysis() -> Result<Vec<Post>> {
         posts.push(post?);
     }
 
-    Ok(posts)
+    // Select a random post from the list
+    let random_post = posts.as_slice().choose(&mut thread_rng()).cloned();
+    Ok(random_post)
 }

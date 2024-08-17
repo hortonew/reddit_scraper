@@ -68,16 +68,18 @@ async fn run() -> Result<(), Box<dyn Error>> {
     for child in response.data.children.iter() {
         let post = &child.data;
         if !post.selftext.is_empty() && post.selftext.contains('?') {
-            println!("Title: {}", post.title);
-            println!("Text: {}", post.selftext);
-            println!("URL: {}", post.url);
-            println!("---");
+            // println!("Title: {}", post.title);
+            // println!("Text: {}", post.selftext);
+            // println!("URL: {}", post.url);
+            // println!("---");
 
             // Insert the post into the SQLite database
             conn.execute(
                 "INSERT INTO posts (title, selftext, created_utc, url) VALUES (?1, ?2, ?3, ?4)",
                 params![post.title, post.selftext, post.created_utc, post.url],
             )?;
+
+            println!("Inserted post into database");
         }
     }
 

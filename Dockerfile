@@ -10,7 +10,7 @@ COPY models/ models/
 
 RUN cargo build --release -p ${APP_NAME}
 
-# Use a minimal base image
+# Use a minimal base image for the build
 FROM debian:bookworm-slim
 ARG APP_NAME
 ENV APP_NAME=${APP_NAME}

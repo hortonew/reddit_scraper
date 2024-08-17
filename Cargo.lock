@@ -45,8 +45,6 @@ dependencies = [
  "models",
  "rand",
  "rusqlite",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -1470,8 +1468,6 @@ dependencies = [
  "models",
  "reqwest",
  "rusqlite",
- "serde",
- "serde_json",
  "tokio",
 ]
 

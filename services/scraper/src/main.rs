@@ -1,4 +1,5 @@
 use reqwest::Client;
+use rusqlite::{params, Connection, Result};
 use serde::Deserialize;
 use std::error::Error;
 
@@ -41,6 +42,21 @@ async fn run() -> Result<(), Box<dyn Error>> {
     let client = Client::new();
     let url = "https://www.reddit.com/r/kubernetes/new.json";
 
+    // Open or create the SQLite database
+    let conn = Connection::open("services/reddit_scraper.db")?;
+
+    // Create a table for storing Reddit posts if it doesn't exist
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS posts (
+            id INTEGER PRIMARY KEY,
+            title TEXT NOT NULL,
+            selftext TEXT NOT NULL,
+            created_utc REAL NOT NULL,
+            url TEXT NOT NULL
+        )",
+        [],
+    )?;
+
     let response = client
         .get(url)
         .header("User-Agent", "rust:reddit-k8s:v0.1 (by /u/hortonew)")
@@ -56,6 +72,12 @@ async fn run() -> Result<(), Box<dyn Error>> {
             println!("Text: {}", post.selftext);
             println!("URL: {}", post.url);
             println!("---");
+
+            // Insert the post into the SQLite database
+            conn.execute(
+                "INSERT INTO posts (title, selftext, created_utc, url) VALUES (?1, ?2, ?3, ?4)",
+                params![post.title, post.selftext, post.created_utc, post.url],
+            )?;
         }
     }
 

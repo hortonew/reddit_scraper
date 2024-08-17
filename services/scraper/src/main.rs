@@ -1,31 +1,7 @@
+use models::RedditResponse;
 use reqwest::Client;
 use rusqlite::{params, Connection, Result};
-use serde::Deserialize;
 use std::error::Error;
-
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-struct RedditPost {
-    title: String,
-    selftext: String,
-    created_utc: f64,
-    url: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct RedditResponse {
-    data: RedditData,
-}
-
-#[derive(Debug, Deserialize)]
-struct RedditData {
-    children: Vec<RedditChild>,
-}
-
-#[derive(Debug, Deserialize)]
-struct RedditChild {
-    data: RedditPost,
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -101,7 +77,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                 )?;
                 println!("Inserted post into database");
             } else {
-                println!("Post already exists in the database");
+                // println!("Post already exists in the database");
             }
         }
     }

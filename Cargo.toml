@@ -1,2 +1,2 @@
 [workspace]
-members = ["services/scraper", "services/web", "services/analyzer"]
+members = ["services/scraper", "services/web", "services/analyzer", "models"]

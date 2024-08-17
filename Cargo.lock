@@ -42,6 +42,7 @@ dependencies = [
 name = "analyzer"
 version = "0.1.0"
 dependencies = [
+ "models",
  "rand",
  "rusqlite",
  "serde",
@@ -843,6 +844,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "models"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "multer"
 version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1458,6 +1467,7 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 name = "scraper"
 version = "0.1.0"
 dependencies = [
+ "models",
  "reqwest",
  "rusqlite",
  "serde",
@@ -2097,6 +2107,7 @@ name = "web"
 version = "0.1.0"
 dependencies = [
  "analyzer",
+ "models",
  "rocket",
  "serde",
  "serde_json",

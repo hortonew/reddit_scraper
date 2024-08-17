@@ -1,17 +1,7 @@
 #[macro_use]
 extern crate rocket;
-
 use analyzer::get_analysis;
 use rocket::response::content::RawJson;
-use serde::Serialize;
-
-#[derive(Debug, Serialize)] // Add Serialize to allow returning as JSON
-pub struct Post {
-    title: String,
-    selftext: String,
-    created_utc: f64,
-    url: String,
-}
 
 #[get("/")]
 fn index() -> RawJson<String> {

@@ -1,0 +1,25 @@
+services:
+  scraper:
+    image: ${PROJECT_NAME}_scraper:${VERSION}
+    container_name: scraper_service
+    restart: no
+    environment:
+      - RUST_LOG=info
+      - DB_PATH=/usr/src/app/db/reddit_scraper.db
+    volumes:
+      - reddit_scraper_db:/usr/src/app/db/
+
+  web:
+    image: ${PROJECT_NAME}_web:${VERSION}
+    container_name: web_service
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    environment:
+      - RUST_LOG=info
+      - DB_PATH=/usr/src/app/db/reddit_scraper.db
+    volumes:
+      - reddit_scraper_db:/usr/src/app/db/
+
+volumes:
+  reddit_scraper_db:

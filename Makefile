@@ -1,9 +1,11 @@
 # Define variables for the project name and default targets
-PROJECT_NAME := reddit_scraper
 CARGO := cargo
+DOCKER := docker
+PROJECT_NAME := reddit_scraper
+VERSION := latest
 
 # Default target: build all crates
-all: build
+all: build-scraper build-web
 
 # Build all crates
 build:
@@ -14,6 +16,20 @@ web:
 
 scrape:
 	$(CARGO) run -p scraper
+
+
+# Build scraper service
+build-scraper:
+	# $(CARGO) build --release -p scraper
+	$(DOCKER) build --build-arg APP_NAME=scraper -t $(PROJECT_NAME)_scraper:$(VERSION) .
+
+# Build web service
+build-web:
+	# $(CARGO) build --release -p web
+	$(DOCKER) build --build-arg APP_NAME=web -t $(PROJECT_NAME)_web:$(VERSION) .
+
+run: build-scraper build-web
+	docker compose up
 
 # Clean build artifacts
 clean:
@@ -28,5 +44,5 @@ test:
 	$(CARGO) test
 
 # Default target when no arguments are provided
-.PHONY: all build build-web build-scraper build-analyzer \
-        run-web run-scraper run-analyzer clean check fmt test
+.PHONY: all build build-web build-scraper \
+        web scraper clean check fmt test

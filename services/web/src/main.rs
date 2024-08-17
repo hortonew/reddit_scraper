@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate rocket;
 use analyzer::get_analysis;
+use rocket::config::Config;
 use rocket::response::content::RawJson;
 
 #[get("/")]
@@ -16,5 +17,10 @@ fn index() -> RawJson<String> {
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![index])
+    let config = Config {
+        address: "0.0.0.0".parse().unwrap(),
+        port: 8000,
+        ..Config::default()
+    };
+    rocket::custom(config).mount("/", routes![index])
 }

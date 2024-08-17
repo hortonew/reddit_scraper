@@ -2,6 +2,8 @@ use models::RedditResponse;
 use reqwest::Client;
 use rusqlite::{params, Connection, Result};
 use std::error::Error;
+use tokio::time;
+use tokio::time::Duration;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -15,10 +17,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 async fn run() -> Result<(), Box<dyn Error>> {
+    let db_path = std::env::var("DB_PATH").unwrap_or("services/reddit_scraper.db".to_string());
+    println!("DB_PATH: {}", db_path);
     let client = Client::new();
-    let conn = Connection::open("services/reddit_scraper.db")?;
+    let conn = Connection::open(db_path)?;
 
     // Create the posts table with a UNIQUE constraint on url
+    println!("Creating table posts if it doesn't exist.");
     conn.execute(
         "CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY,
@@ -31,6 +36,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
     )?;
 
     // Create the checkpoint table
+    println!("Creating table last_checkpoint if it doesn't exist.");
     conn.execute(
         "CREATE TABLE IF NOT EXISTS last_checkpoint (
             id INTEGER PRIMARY KEY,
@@ -49,19 +55,45 @@ async fn run() -> Result<(), Box<dyn Error>> {
         .unwrap_or(0.0);
 
     // Construct the API request URL
+    println!("Fetching posts from Reddit.");
     let url = format!(
         "https://www.reddit.com/r/kubernetes/new.json?before={}",
         last_utc
     );
-    let response = client
-        .get(&url)
-        .header("User-Agent", "rust:reddit-k8s:v0.1 (by /u/hortonew)")
-        .send()
-        .await?
-        .json::<RedditResponse>()
-        .await?;
+    let mut response = None;
+    let mut backoff = 1;
+
+    loop {
+        match client
+            .get(&url)
+            .header("User-Agent", "rust:reddit-k8s:v0.1 (by /u/hortonew)")
+            .send()
+            .await
+        {
+            Ok(res) => match res.json::<RedditResponse>().await {
+                // Await the parsing of the JSON response
+                Ok(parsed_response) => {
+                    response = Some(parsed_response);
+                    break;
+                }
+                Err(err) => {
+                    eprintln!("Failed to parse JSON: {}", err);
+                    time::sleep(Duration::from_secs(backoff)).await;
+                    backoff *= 2;
+                }
+            },
+            Err(err) => {
+                eprintln!("Request failed: {}.  Backoff={}", err, backoff);
+                time::sleep(Duration::from_secs(backoff)).await;
+                backoff *= 2;
+            }
+        }
+    }
+
+    let response = response.ok_or("Request failed after multiple attempts")?;
 
     // Process the posts
+    println!("Processing posts.");
     for child in response.data.children.iter() {
         let post = &child.data;
         if !post.selftext.is_empty() && post.selftext.contains('?') {

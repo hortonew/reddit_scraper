@@ -1,0 +1,8 @@
+/target
+/Dockerfile
+/docker-compose.yml
+/Makefile
+/.github
+/.git
+
+reddit_scraper.db

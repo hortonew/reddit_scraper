@@ -4,7 +4,9 @@ use rand::thread_rng;
 use rusqlite::{Connection, Result};
 
 pub fn get_analysis() -> Result<Option<RedditPost>> {
-    let conn = Connection::open("services/reddit_scraper.db")?;
+    let conn = Connection::open(
+        std::env::var("DB_PATH").unwrap_or("services/reddit_scraper.db".to_string()),
+    )?;
 
     let mut stmt = conn.prepare("SELECT title, selftext, created_utc, url FROM posts")?;
     let post_iter = stmt.query_map([], |row| {

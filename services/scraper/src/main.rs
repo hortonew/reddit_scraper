@@ -4,6 +4,7 @@ use rusqlite::{params, Connection, Result};
 use std::error::Error;
 use tokio::time;
 use tokio::time::Duration;
+// use databases;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -24,26 +25,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
 
     // Create the posts table with a UNIQUE constraint on url
     println!("Creating table posts if it doesn't exist.");
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS posts (
-            id INTEGER PRIMARY KEY,
-            title TEXT NOT NULL,
-            selftext TEXT NOT NULL,
-            created_utc REAL NOT NULL,
-            url TEXT NOT NULL UNIQUE
-        )",
-        [],
-    )?;
-
-    // Create the checkpoint table
     println!("Creating table last_checkpoint if it doesn't exist.");
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS last_checkpoint (
-            id INTEGER PRIMARY KEY,
-            last_utc REAL NOT NULL
-        )",
-        [],
-    )?;
+    databases::run_migrations(&conn)?;
 
     // Retrieve the last checkpoint
     let last_utc: f64 = conn
@@ -109,7 +92,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                 )?;
                 println!("Inserted post into database");
             } else {
-                // println!("Post already exists in the database");
+                println!("Post already exists in the database");
             }
         }
     }

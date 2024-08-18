@@ -18,3 +18,8 @@ make run
 ```
 
 Navigate to [http://localhost:8000](http://localhost:8000) to see the results from the database.
+
+
+## Monitoring
+
+Navigate to [Prometheus](http://localhost:9090/graph?g0.expr=up&g0.tab=0&g0.display_mode=lines&g0.show_exemplars=0&g0.range_input=1h) to watch the history of uptime of the API endpoint.

@@ -16,3 +16,6 @@ path = "src/lib.rs"
 [[bin]]
 name = "analyzer"
 path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3.12.0"

@@ -55,6 +55,7 @@ dependencies = [
  "rand",
  "rusqlite",
  "sentiment",
+ "tempfile",
 ]
 
 [[package]]
@@ -227,6 +228,7 @@ name = "databases"
 version = "0.1.0"
 dependencies = [
  "rusqlite",
+ "tempfile",
  "thiserror",
 ]
 
@@ -2289,8 +2291,10 @@ dependencies = [
  "models",
  "rocket",
  "rocket_cors",
+ "rusqlite",
  "serde 1.0.208",
  "serde_json 1.0.125",
+ "tempfile",
 ]
 
 [[package]]

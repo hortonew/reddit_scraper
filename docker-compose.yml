@@ -6,6 +6,7 @@ services:
     environment:
       - RUST_LOG=info
       - DB_PATH=/usr/src/app/db/reddit_scraper.db
+      - DOCKER_ENV=1 
     volumes:
       - reddit_scraper_db:/usr/src/app/db/
 

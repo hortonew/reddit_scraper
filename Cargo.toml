@@ -6,3 +6,4 @@ members = [
     "models",
     "databases",
 ]
+resolver = "2"

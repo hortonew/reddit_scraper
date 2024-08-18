@@ -13,6 +13,7 @@ This project is built in Rust, but uses docker compose to run the project (you s
 
 ```sh
 # Build the dockerfiles, and run them with compose
+make test
 make run
 ```
 

@@ -43,3 +43,23 @@ fn rocket() -> _ {
         .mount("/", routes![index])
         .attach(cors)
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rocket::{http::Status, local::blocking::Client};
+
+    #[test]
+    fn test_index_returns_data() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+
+        let response = client.get("/").dispatch();
+        let status = response.status();
+        let body = response.into_string().unwrap();
+
+        println!("Response status: {:?}", status);
+        println!("Response body: {}", body);
+
+        assert_eq!(status, Status::Ok);
+        assert!(!body.is_empty(), "Expected response body to contain data");
+    }
+}

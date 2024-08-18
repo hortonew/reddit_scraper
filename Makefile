@@ -17,6 +17,8 @@ web:
 scrape:
 	$(CARGO) run -p scraper
 
+test:
+	$(CARGO) test
 
 # Build scraper service
 build-scraper:

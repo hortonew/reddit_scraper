@@ -2,9 +2,9 @@ use models::RedditResponse;
 use reqwest::Client;
 use rusqlite::{params, Connection, Result};
 use std::error::Error;
+use std::path::PathBuf;
 use tokio::time;
 use tokio::time::Duration;
-// use databases;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -23,10 +23,17 @@ async fn run() -> Result<(), Box<dyn Error>> {
     let client = Client::new();
     let conn = Connection::open(db_path)?;
 
-    // Create the posts table with a UNIQUE constraint on url
-    println!("Creating table posts if it doesn't exist.");
-    println!("Creating table last_checkpoint if it doesn't exist.");
-    databases::run_migrations(&conn)?;
+    // Determine the migration path based on the environment
+    let migrations_path = if cfg!(target_os = "linux") && std::env::var("DOCKER_ENV").is_ok() {
+        // Docker environment path
+        PathBuf::from("/usr/src/app/databases/kubernetes_subreddit")
+    } else {
+        // Local environment path
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("kubernetes_subreddit")
+    };
+
+    // Run the migrations using the connection and the migration path
+    databases::run_migrations(&conn, migrations_path)?;
 
     // Retrieve the last checkpoint
     let last_utc: f64 = conn
@@ -43,6 +50,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
         "https://www.reddit.com/r/kubernetes/new.json?before={}",
         last_utc
     );
+
+    #[allow(unused_assignments)]
     let mut response = None;
     let mut backoff = 1;
 

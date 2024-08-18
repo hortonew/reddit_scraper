@@ -21,5 +21,13 @@ services:
     volumes:
       - reddit_scraper_db:/usr/src/app/db/
 
+  web-frontend:
+    build: ./services/web-frontend
+    container_name: frontend_service
+    ports:
+      - "3100:80"
+    depends_on:
+      - web
+
 volumes:
   reddit_scraper_db:

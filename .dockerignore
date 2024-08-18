@@ -6,3 +6,4 @@
 /.git
 
 reddit_scraper.db
+services/web-frontend/node_modules/

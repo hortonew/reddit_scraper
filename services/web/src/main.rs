@@ -4,6 +4,7 @@ use analyzer::{get_analysis, sentiment_label};
 use models::ApiResponse;
 use rocket::config::Config;
 use rocket::response::content::RawJson;
+use rocket_cors::{AllowedOrigins, CorsOptions};
 
 #[get("/")]
 fn index() -> RawJson<String> {
@@ -27,10 +28,18 @@ fn index() -> RawJson<String> {
 
 #[launch]
 fn rocket() -> _ {
+    let cors = CorsOptions::default()
+        .allowed_origins(AllowedOrigins::all())
+        .to_cors()
+        .expect("error creating CORS fairing");
+
     let config = Config {
         address: "0.0.0.0".parse().unwrap(),
         port: 8000,
         ..Config::default()
     };
-    rocket::custom(config).mount("/", routes![index])
+
+    rocket::custom(config)
+        .mount("/", routes![index])
+        .attach(cors)
 }

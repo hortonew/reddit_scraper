@@ -17,8 +17,8 @@ make test
 make run
 ```
 
-Navigate to [http://localhost:8000](http://localhost:8000) to see the results from the database.
-
+Navigate to [http://localhost:8000](http://localhost:8000) to see the results from the API.
+Navigate to [http://localhost:3100](http://localhost:3100) to see the results from the web app.
 
 ## Monitoring
 

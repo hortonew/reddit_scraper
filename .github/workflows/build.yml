@@ -1,0 +1,31 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: Build and Push Scraper Docker Image
+      run: |
+        make build-scraper
+
+    - name: Build and Push Web Docker Image
+      run: |
+        make build-web
+
+    - name: Build and Push Analyzer Docker Image
+      run: |
+        make build-analyzer

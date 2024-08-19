@@ -5,7 +5,7 @@ PROJECT_NAME := reddit_scraper
 VERSION := latest
 
 # Default target: build all crates
-all: build-scraper build-web
+all: build-scraper build-worker build-web
 
 # Build all crates
 build:
@@ -25,12 +25,16 @@ build-scraper:
 	# $(CARGO) build --release -p scraper
 	$(DOCKER) build --build-arg APP_NAME=scraper -t $(PROJECT_NAME)_scraper:$(VERSION) .
 
+build-worker:
+	# $(CARGO) build --release -p worker
+	$(DOCKER) build --build-arg APP_NAME=worker -t $(PROJECT_NAME)_worker:$(VERSION) .
+
 # Build web service
 build-web:
 	# $(CARGO) build --release -p web
 	$(DOCKER) build --build-arg APP_NAME=web -t $(PROJECT_NAME)_web:$(VERSION) .
 
-run: build-scraper build-web
+run: build-scraper build-worker build-web
 	docker compose up
 
 # Clean build artifacts
@@ -46,5 +50,5 @@ test:
 	$(CARGO) test
 
 # Default target when no arguments are provided
-.PHONY: all build build-web build-scraper \
+.PHONY: all build build-web build-scraper build-worker \
         web scraper clean check fmt test

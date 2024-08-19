@@ -7,7 +7,21 @@ services:
       - RUST_LOG=info
       - DB_PATH=/usr/src/app/db/reddit_scraper.db
       - DOCKER_ENV=1 
-      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - RABBITMQ_URL=amqp://testuser:testpassword@rabbitmq:5672/test-vhost
+    volumes:
+      - reddit_scraper_db:/usr/src/app/db/
+    depends_on:
+      - rabbitmq
+
+  worker:
+    image: ${PROJECT_NAME}_worker:${VERSION}
+    container_name: worker_service
+    restart: unless-stopped
+    environment:
+      - RUST_LOG=info
+      - DB_PATH=/usr/src/app/db/reddit_scraper.db
+      - DOCKER_ENV=1 
+      - RABBITMQ_URL=amqp://testuser:testpassword@rabbitmq:5672/test-vhost
     volumes:
       - reddit_scraper_db:/usr/src/app/db/
     depends_on:

@@ -1,10 +1,11 @@
+use amiquip::{Connection, Exchange, Publish, Result};
 use models::RedditResponse;
 use reqwest::Client;
-use rusqlite::{params, Connection, Result};
+use serde_json;
+use std::env;
 use std::error::Error;
-use std::path::PathBuf;
-use tokio::time;
-use tokio::time::Duration;
+use std::io;
+use tokio::time::{self, Duration};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -18,56 +19,32 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 async fn run() -> Result<(), Box<dyn Error>> {
-    let db_path = std::env::var("DB_PATH").unwrap_or("services/reddit_scraper.db".to_string());
-    println!("DB_PATH: {}", db_path);
     let client = Client::new();
-    let conn = Connection::open(db_path)?;
 
-    // Determine the migration path based on the environment
-    let migrations_path = if cfg!(target_os = "linux") && std::env::var("DOCKER_ENV").is_ok() {
-        // Docker environment path
-        PathBuf::from("/usr/src/app/databases/kubernetes_subreddit")
-    } else {
-        // Local environment path
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("kubernetes_subreddit")
-    };
-
-    // Run the migrations using the connection and the migration path
-    databases::run_migrations(&conn, migrations_path)?;
-
-    // Retrieve the last checkpoint
-    let last_utc: f64 = conn
-        .query_row(
-            "SELECT last_utc FROM last_checkpoint ORDER BY id DESC LIMIT 1",
-            [],
-            |row| row.get(0),
-        )
-        .unwrap_or(0.0);
-
-    // Construct the API request URL
+    // Fetch posts from Reddit
     println!("Fetching posts from Reddit.");
-    let url = format!(
-        "https://www.reddit.com/r/kubernetes/new.json?before={}",
-        last_utc
-    );
+    let response = fetch_reddit_posts(&client).await?;
 
-    #[allow(unused_assignments)]
-    let mut response = None;
+    // Publish results to RabbitMQ
+    publish_to_queue(&response).await?;
+
+    Ok(())
+}
+
+async fn fetch_reddit_posts(client: &Client) -> Result<RedditResponse, Box<dyn Error>> {
+    // Replace with your actual fetching logic
+    let url = "https://www.reddit.com/r/kubernetes/new.json";
+
     let mut backoff = 1;
-
     loop {
         match client
-            .get(&url)
+            .get(url)
             .header("User-Agent", "rust:reddit-k8s:v0.1 (by /u/hortonew)")
             .send()
             .await
         {
             Ok(res) => match res.json::<RedditResponse>().await {
-                // Await the parsing of the JSON response
-                Ok(parsed_response) => {
-                    response = Some(parsed_response);
-                    break;
-                }
+                Ok(parsed_response) => return Ok(parsed_response),
                 Err(err) => {
                     eprintln!("Failed to parse JSON: {}", err);
                     time::sleep(Duration::from_secs(backoff)).await;
@@ -81,44 +58,36 @@ async fn run() -> Result<(), Box<dyn Error>> {
             }
         }
     }
+}
 
-    let response = response.ok_or("Request failed after multiple attempts")?;
+async fn publish_to_queue(response: &RedditResponse) -> Result<()> {
+    // Connect to RabbitMQ with credentials
+    let rabbitmq_url =
+        env::var("RABBITMQ_URL").unwrap_or_else(|_| "localhost:5672/test-vhost".to_string());
+    let mut connection = Connection::insecure_open(&rabbitmq_url)?;
 
-    // Process the posts
-    println!("Processing posts.");
+    // Open a channel - None lets the library choose the channel ID.
+    let channel = connection.open_channel(None)?;
+
+    // Get a handle to the direct exchange on our channel.
+    let exchange = Exchange::direct(&channel);
+
+    // Loop through the Reddit posts in the response
     for child in response.data.children.iter() {
         let post = &child.data;
         if !post.selftext.is_empty() && post.selftext.contains('?') {
-            // Check if the post already exists
-            let mut stmt = conn.prepare("SELECT COUNT(*) FROM posts WHERE url = ?1")?;
-            let count: i64 = stmt.query_row(params![post.url], |row| row.get(0))?;
+            // Convert the post to a JSON string and handle potential errors
+            let message = serde_json::to_string(post).map_err(|err| {
+                amiquip::Error::IoErrorWritingSocket {
+                    source: io::Error::new(io::ErrorKind::Other, err.to_string()),
+                }
+            })?;
 
-            if count == 0 {
-                // Insert the post into the SQLite database
-                conn.execute(
-                    "INSERT INTO posts (title, selftext, created_utc, url) VALUES (?1, ?2, ?3, ?4)",
-                    params![post.title, post.selftext, post.created_utc, post.url],
-                )?;
-                println!("Inserted post into database");
-            } else {
-                println!("Post already exists in the database");
-            }
+            // Publish the post details to the "testqueue" queue
+            exchange.publish(Publish::new(message.as_bytes(), "testqueue"))?;
         }
     }
 
-    // Update the checkpoint with the latest timestamp
-    let max_utc = response
-        .data
-        .children
-        .iter()
-        .map(|child| child.data.created_utc)
-        .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
-        .unwrap_or(last_utc);
-
-    conn.execute(
-        "INSERT INTO last_checkpoint (last_utc) VALUES (?1)",
-        params![max_utc],
-    )?;
-
-    Ok(())
+    // Close the connection to RabbitMQ
+    connection.close()
 }

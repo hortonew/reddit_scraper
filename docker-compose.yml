@@ -7,8 +7,11 @@ services:
       - RUST_LOG=info
       - DB_PATH=/usr/src/app/db/reddit_scraper.db
       - DOCKER_ENV=1 
+      - RABBITMQ_URL=amqp://rabbitmq:5672
     volumes:
       - reddit_scraper_db:/usr/src/app/db/
+    depends_on:
+      - rabbitmq
 
   web:
     image: ${PROJECT_NAME}_web:${VERSION}
@@ -19,8 +22,11 @@ services:
     environment:
       - RUST_LOG=info
       - DB_PATH=/usr/src/app/db/reddit_scraper.db
+      - RABBITMQ_URL=amqp://rabbitmq:5672
     volumes:
       - reddit_scraper_db:/usr/src/app/db/
+    depends_on:
+      - rabbitmq
 
   web-frontend:
     build: ./services/web-frontend
@@ -44,6 +50,16 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  rabbitmq:
+    build:
+      context: ./services/rabbitmq
+      dockerfile: Dockerfile
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
     restart: unless-stopped
 
 volumes:
